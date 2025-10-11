@@ -14,17 +14,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  User.addHook("beforeCreate", async (user) => {
-    const bcrypt = require("bcrypt");
-    user.password = await bcrypt.hash(user.password, 10);
-  });
-
-  User.addHook("beforeUpdate", async (user) => {
-    if (user.changed("password")) {
-      const bcrypt = require("bcrypt");
-      user.password = await bcrypt.hash(user.password, 10);
-    }
-  });
-
   return User;
 };

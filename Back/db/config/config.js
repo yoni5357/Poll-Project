@@ -8,8 +8,9 @@ module.exports = {
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
-    logging: false,
-    define: { underscored: true }
+    logging: console.log,
+    define: { underscored: true },
+    pool: { max: 5, min: 0, acquire: 5000, idle: 10000 }
   },
   test: {
     username: process.env.DB_USER,
@@ -18,13 +19,13 @@ module.exports = {
     host: process.env.DB_HOST || '127.0.0.1',
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
-    logging: false,
+    logging: console.log,
     define: { underscored: true }
   },
   production: {
-    use_env_variable: 'DATABASE_URL', // e.g. mysql://user:pass@host:3306/db
+    use_env_variable: 'DATABASE_URL',
     dialect: 'mysql',
-    logging: false,
+    logging: console.log,
     define: { underscored: true }
   }
 };
