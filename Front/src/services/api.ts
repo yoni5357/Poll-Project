@@ -28,8 +28,9 @@ export interface VoteRequest {
 }
 
 // Fetch all polls for homepage
-export async function fetchAllPolls(): Promise<PollData[]> {
-  const response = await fetch(`${API_BASE_URL}/polls`);
+export async function fetchAllPolls(username?: string): Promise<PollData[]> {
+  const url = username ? `${API_BASE_URL}/polls?username=${encodeURIComponent(username)}` : `${API_BASE_URL}/polls`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch polls');
   }
@@ -78,5 +79,61 @@ export async function fetchPoll(slug: string): Promise<any> {
   if (!response.ok) {
     throw new Error('Failed to fetch poll');
   }
+  return response.json();
+}
+
+// Auth interfaces
+export interface RegisterRequest {
+  email: string;
+  username: string;
+  password: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserResponse {
+  user: {
+    id: number;
+    email: string;
+    username: string;
+  };
+}
+
+// Register a new user
+export async function registerUser(userData: RegisterRequest): Promise<UserResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(userData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Registration failed');
+  }
+  
+  return response.json();
+}
+
+// Login user
+export async function loginUser(loginData: LoginRequest): Promise<UserResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(loginData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Login failed');
+  }
+  
   return response.json();
 }

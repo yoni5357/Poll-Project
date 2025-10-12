@@ -4,6 +4,8 @@ const { sequelize, Poll, PollOption, Vote } = require("../db"); // JS import
 
 export async function getAllPolls(req: Request, res: Response) {
   try {
+    const { username } = req.query; // Get username from query params
+    
     const polls = await Poll.findAll({
       include: [{ model: PollOption, as: "options" }],
       order: [['created_at', 'DESC']]
@@ -29,12 +31,32 @@ export async function getAllPolls(req: Request, res: Response) {
           votes: Number(r.votes)
         }));
 
+        // Check if the current user has voted on this poll
+        let hasVoted = false;
+        let userVote = undefined;
+        
+        if (username) {
+          const { Vote } = require('../db');
+          const vote = await Vote.findOne({
+            where: { 
+              poll_id: poll.id, 
+              voter_username: username 
+            }
+          });
+          
+          if (vote) {
+            hasVoted = true;
+            userVote = vote.option_id.toString();
+          }
+        }
+
         return {
           id: poll.slug, // Use slug as ID for frontend
           title: poll.title,
           options,
           totalVotes: total,
-          hasVoted: false, // Frontend will manage this
+          hasVoted,
+          userVote,
           creatorUsername: poll.creator_username
         };
       })

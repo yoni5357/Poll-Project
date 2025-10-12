@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { PollCreator } from "../components/PollCreator";
 import { Poll } from "../components/Poll";
+import { Login } from "../components/Login";
+import { Register } from "../components/Register";
 import {
   fetchAllPolls,
   createPoll,
@@ -15,16 +17,29 @@ const HomePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [polls, setPolls] = useState<PollData[]>([]);
 
-  // Fetch polls from API on component mount
+  // User authentication state
+  const [user, setUser] = useState<string | null>(null);
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+
+  // Check for existing user in localStorage on mount
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('username');
+    if (savedUsername) {
+      setUser(savedUsername);
+    }
+  }, []);
+
+  // Fetch polls from API on component mount and when user changes
   useEffect(() => {
     loadPolls();
-  }, []);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPolls = async () => {
     try {
       setLoading(true);
       setError(null);
-      const pollsData = await fetchAllPolls();
+      const pollsData = await fetchAllPolls(user || undefined);
       setPolls(pollsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load polls");
@@ -33,37 +48,33 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // Authentication handlers
+  const handleAuthSuccess = (username: string) => {
+    setUser(username);
+    setShowAuth(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('username');
+    setUser(null);
+  };
+
   // Handle voting
   const handleVote = async (pollId: string, optionId: number) => {
+    if (!user) {
+      setShowAuth(true);
+      setAuthMode('login');
+      return;
+    }
+
     try {
-      // For now, we'll use a placeholder username
-      // In a real app, this would come from authentication
       await castVote(pollId, {
-        voterUsername: "user123",
+        voterUsername: user,
         optionId: optionId,
       });
 
-      // Update local state to reflect the vote
-      setPolls((prevPolls) =>
-        prevPolls.map((poll) => {
-          if (poll.id === pollId && !poll.hasVoted) {
-            const updatedOptions = poll.options.map((option) =>
-              option.id === optionId
-                ? { ...option, votes: option.votes + 1 }
-                : option
-            );
-
-            return {
-              ...poll,
-              options: updatedOptions,
-              totalVotes: poll.totalVotes + 1,
-              hasVoted: true,
-              userVote: optionId.toString(),
-            };
-          }
-          return poll;
-        })
-      );
+      // Reload polls to get updated vote counts and user's vote status
+      await loadPolls();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to cast vote");
     }
@@ -74,12 +85,18 @@ const HomePage: React.FC = () => {
     title: string,
     options: { text: string }[]
   ) => {
+    if (!user) {
+      setShowAuth(true);
+      setAuthMode('login');
+      return;
+    }
+
     try {
       // Create poll on backend
-      const result = await createPoll({
+      await createPoll({
         title,
         options: options.map((opt) => opt.text),
-        creatorUsername: "user123", // Placeholder username
+        creatorUsername: user,
       });
 
       // Reload polls to get the new poll from the server
@@ -94,17 +111,77 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Welcome to Poll Project
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Create and participate in polls with ease
-          </p>
+        {/* Header with user info */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">
+              Welcome to Poll Project
+            </h1>
+            <p className="text-xl text-gray-600">
+              Create and participate in polls with ease
+            </p>
+          </div>
+          
+          {/* User authentication section */}
+          <div className="flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-3">
+                <span className="text-gray-700">Welcome, <strong>{user}</strong></span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setShowAuth(true); setAuthMode('login'); }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        {/* Auth Modal */}
+        {showAuth && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="relative">
+              <button
+                onClick={() => setShowAuth(false)}
+                className="absolute -top-2 -right-2 bg-gray-500 hover:bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center z-10"
+              >
+                ×
+              </button>
+              {authMode === 'login' ? (
+                <Login
+                  onSuccess={handleAuthSuccess}
+                  onSwitchToRegister={() => setAuthMode('register')}
+                />
+              ) : (
+                <Register
+                  onSuccess={handleAuthSuccess}
+                  onSwitchToLogin={() => setAuthMode('login')}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="text-center mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => setShowPollCreator(!showPollCreator)}
+              onClick={() => {
+                if (!user) {
+                  setShowAuth(true);
+                  setAuthMode('login');
+                } else {
+                  setShowPollCreator(!showPollCreator);
+                }
+              }}
               className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
             >
               {showPollCreator ? "Hide Poll Creator" : "Create Poll"}
@@ -119,7 +196,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Poll Creator Section */}
-        {showPollCreator && (
+        {showPollCreator && user && (
           <div className="mb-12">
             <PollCreator onPollCreate={handlePollCreate} />
           </div>
