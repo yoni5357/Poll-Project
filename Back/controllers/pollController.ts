@@ -2,6 +2,51 @@ import { Request, Response } from "express";
 import { makeSlug } from '../utils/slug';
 const { sequelize, Poll, PollOption, Vote } = require("../db"); // JS import
 
+export async function getAllPolls(req: Request, res: Response) {
+  try {
+    const polls = await Poll.findAll({
+      include: [{ model: PollOption, as: "options" }],
+      order: [['created_at', 'DESC']]
+    });
+
+    const pollsWithVotes = await Promise.all(
+      polls.map(async (poll: any) => {
+        // Get vote counts for each option
+        const [rows] = await sequelize.query(
+          `SELECT po.id AS option_id, po.label, po.position, COUNT(v.id) AS votes
+           FROM poll_options po
+           LEFT JOIN votes v ON v.option_id = po.id
+           WHERE po.poll_id = ?
+           GROUP BY po.id
+           ORDER BY po.position ASC`,
+          { replacements: [poll.id] }
+        );
+
+        const total = (rows as any[]).reduce((s, r) => s + Number(r.votes), 0);
+        const options = (rows as any[]).map((r) => ({
+          id: Number(r.option_id),
+          text: r.label,
+          votes: Number(r.votes)
+        }));
+
+        return {
+          id: poll.slug, // Use slug as ID for frontend
+          title: poll.title,
+          options,
+          totalVotes: total,
+          hasVoted: false, // Frontend will manage this
+          creatorUsername: poll.creator_username
+        };
+      })
+    );
+
+    res.json(pollsWithVotes);
+  } catch (error) {
+    console.error('Error fetching polls:', error);
+    res.status(500).json({ error: 'Failed to fetch polls' });
+  }
+}
+
 export async function createPoll(req: Request, res: Response) {
   
   const { title, creatorUsername, options } = req.body;

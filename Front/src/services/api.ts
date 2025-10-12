@@ -1,0 +1,82 @@
+const API_BASE_URL = 'http://localhost:3000';
+
+export interface PollOption {
+  id: number;
+  text: string;
+  votes: number;
+}
+
+export interface PollData {
+  id: string;
+  title: string;
+  options: PollOption[];
+  totalVotes: number;
+  hasVoted: boolean;
+  userVote?: string;
+  creatorUsername?: string;
+}
+
+export interface CreatePollRequest {
+  title: string;
+  options: string[];
+  creatorUsername: string;
+}
+
+export interface VoteRequest {
+  voterUsername: string;
+  optionId: number;
+}
+
+// Fetch all polls for homepage
+export async function fetchAllPolls(): Promise<PollData[]> {
+  const response = await fetch(`${API_BASE_URL}/polls`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch polls');
+  }
+  return response.json();
+}
+
+// Create a new poll
+export async function createPoll(pollData: CreatePollRequest): Promise<{ slug: string }> {
+  const response = await fetch(`${API_BASE_URL}/polls`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(pollData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to create poll');
+  }
+  
+  return response.json();
+}
+
+// Cast a vote on a poll
+export async function castVote(slug: string, voteData: VoteRequest): Promise<{ ok: boolean }> {
+  const response = await fetch(`${API_BASE_URL}/polls/${slug}/vote`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(voteData),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to cast vote');
+  }
+  
+  return response.json();
+}
+
+// Fetch a specific poll by slug
+export async function fetchPoll(slug: string): Promise<any> {
+  const response = await fetch(`${API_BASE_URL}/polls/${slug}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch poll');
+  }
+  return response.json();
+}
