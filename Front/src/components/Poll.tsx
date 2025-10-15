@@ -27,7 +27,7 @@ export function Poll({ poll, onVote }: PollProps) {
   const handleVote = () => {
     if (selectedOption !== null && !poll.hasVoted) {
       onVote(poll.id, selectedOption);
-      setSelectedOption(null); // Reset selection after voting
+      setSelectedOption(null);
     }
   };
 
