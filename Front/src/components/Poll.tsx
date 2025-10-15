@@ -43,14 +43,6 @@ export function Poll({ poll, onVote }: PollProps) {
       setShowShareModal(false);
     } catch (err) {
       console.error('Failed to copy: ', err);
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = pollUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      alert('Poll URL copied to clipboard!');
       setShowShareModal(false);
     }
   };
