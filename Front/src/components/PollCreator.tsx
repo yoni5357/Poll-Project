@@ -2,36 +2,27 @@
 
 import React, { useState } from 'react';
 
-interface PollOption {
-  id: string;
-  text: string;
-}
-
 interface PollCreatorProps {
   onPollCreate: (title: string, options: string[]) => void;
 }
 
 export function PollCreator({ onPollCreate }: PollCreatorProps) {
   const [title, setTitle] = useState('');
-  const [options, setOptions] = useState<PollOption[]>([
-    { id: '1', text: '' },
-    { id: '2', text: '' }
-  ]);
+  const [options, setOptions] = useState<string[]>(['', '']);
 
   const addOption = () => {
-    const newId = (options.length + 1).toString();
-    setOptions([...options, { id: newId, text: '' }]);
+    setOptions([...options, '']);
   };
 
-  const removeOption = (id: string) => {
+  const removeOption = (index: number) => {
     if (options.length > 2) {
-      setOptions(options.filter(option => option.id !== id));
+      setOptions(options.filter((_, i) => i !== index));
     }
   };
 
-  const updateOption = (id: string, text: string) => {
-    setOptions(options.map(option => 
-      option.id === id ? { ...option, text } : option
+  const updateOption = (index: number, text: string) => {
+    setOptions(options.map((option, i) => 
+      i === index ? text : option
     ));
   };
 
@@ -43,18 +34,18 @@ export function PollCreator({ onPollCreate }: PollCreatorProps) {
       return;
     }
 
-    const validOptions = options.filter(opt => opt.text.trim() !== '');
+    const validOptions = options.filter(opt => opt.trim() !== '');
     if (validOptions.length < 2) {
       alert('Please provide at least 2 options');
       return;
     }
 
     // Create the poll
-    onPollCreate(title, validOptions.map(opt => opt.text));
+    onPollCreate(title, validOptions);
     
     // Reset form
     setTitle('');
-    setOptions([{ id: '1', text: '' }, { id: '2', text: '' }]);
+    setOptions(['', '']);
   };
 
   return (
@@ -86,21 +77,21 @@ export function PollCreator({ onPollCreate }: PollCreatorProps) {
           </label>
           <div className="space-y-3">
             {options.map((option, index) => (
-              <div key={option.id} className="flex items-center gap-3">
+              <div key={index} className="flex items-center gap-3">
                 <span className="text-sm text-gray-500 w-8">
                   {index + 1}.
                 </span>
                 <input
                   type="text"
-                  value={option.text}
-                  onChange={(e) => updateOption(option.id, e.target.value)}
+                  value={option}
+                  onChange={(e) => updateOption(index, e.target.value)}
                   placeholder={`Option ${index + 1}`}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition duration-200"
                 />
                 {options.length > 2 && (
                   <button
                     type="button"
-                    onClick={() => removeOption(option.id)}
+                    onClick={() => removeOption(index)}
                     className="text-red-500 hover:text-red-700 p-1 transition duration-200"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
