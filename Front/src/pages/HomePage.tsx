@@ -27,12 +27,17 @@ const HomePage: React.FC = () => {
     const savedUsername = localStorage.getItem('username');
     if (savedUsername) {
       setUser(savedUsername);
+    } else {
+      // Load polls immediately if no saved user
+      loadPolls();
     }
   }, []);
 
-  // Fetch polls from API on component mount and when user changes
+  // Fetch polls when user state changes (login/logout)
   useEffect(() => {
-    loadPolls();
+    if (user) {
+      loadPolls();
+    }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPolls = async () => {
