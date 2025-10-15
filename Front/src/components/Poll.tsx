@@ -22,11 +22,36 @@ interface PollProps {
 
 export function Poll({ poll, onVote }: PollProps) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const handleVote = () => {
     if (selectedOption !== null && !poll.hasVoted) {
       onVote(poll.id, selectedOption);
       setSelectedOption(null); // Reset selection after voting
+    }
+  };
+
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
+
+  const copyToClipboard = async () => {
+    const pollUrl = `${window.location.origin}/poll/${poll.id}`;
+    try {
+      await navigator.clipboard.writeText(pollUrl);
+      alert('Poll URL copied to clipboard!');
+      setShowShareModal(false);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = pollUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Poll URL copied to clipboard!');
+      setShowShareModal(false);
     }
   };
 
@@ -36,11 +61,23 @@ export function Poll({ poll, onVote }: PollProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6">
-      {/* Poll Title */}
-      <h3 className="text-xl font-bold text-gray-800 mb-4">
-        {poll.title}
-      </h3>
+    <>
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        {/* Poll Header with Title and Share Button */}
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-xl font-bold text-gray-800 flex-1 mr-3">
+            {poll.title}
+          </h3>
+          <button
+            onClick={handleShare}
+            className="flex-shrink-0 p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+            title="Share this poll"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+            </svg>
+          </button>
+        </div>
 
       {/* Poll Options */}
       <div className="space-y-3 mb-4">
@@ -130,7 +167,50 @@ export function Poll({ poll, onVote }: PollProps) {
           <p className="text-xs text-gray-500 mt-1">Thank you for voting!</p>
         </div>
       )}
-    </div>
+      </div>
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Share Poll</h3>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <p className="text-gray-600 mb-4">Share this poll with others:</p>
+            
+            <div className="bg-gray-100 rounded-lg p-3 mb-4">
+              <p className="text-sm text-gray-800 break-all">
+                {`${window.location.origin}/poll/${poll.id}`}
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={copyToClipboard}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
+              >
+                Copy Link
+              </button>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

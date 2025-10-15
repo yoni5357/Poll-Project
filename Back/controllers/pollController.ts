@@ -114,44 +114,67 @@ export async function createPoll(req: Request, res: Response) {
 }
 
 export async function getPoll(req: Request, res: Response) {
-  const { slug } = req.params;
+  try {
+    const { slug } = req.params;
+    const { username } = req.query; // Get username from query params
 
-  const poll = await Poll.findOne({
-    where: { slug },
-    include: [{ model: PollOption, as: "options" }],
-  });
+    const poll = await Poll.findOne({
+      where: { slug },
+      include: [{ model: PollOption, as: "options" }],
+    });
 
-  if (!poll) return res.status(404).json({ error: "Not found" });
+    if (!poll) return res.status(404).json({ error: "Not found" });
 
-  // counts + percentages
-  const [rows] = await sequelize.query(
-    `SELECT po.id AS option_id, po.label, po.position, COUNT(v.id) AS votes
-     FROM poll_options po
-     LEFT JOIN votes v ON v.option_id = po.id
-     WHERE po.poll_id = ?
-     GROUP BY po.id
-     ORDER BY po.position ASC`,
-    { replacements: [poll.id] }
-  );
+    // Get vote counts for each option
+    const [rows] = await sequelize.query(
+      `SELECT po.id AS option_id, po.label, po.position, COUNT(v.id) AS votes
+       FROM poll_options po
+       LEFT JOIN votes v ON v.option_id = po.id
+       WHERE po.poll_id = ?
+       GROUP BY po.id
+       ORDER BY po.position ASC`,
+      { replacements: [poll.id] }
+    );
 
-  const total = (rows as any[]).reduce((s, r) => s + Number(r.votes), 0);
-  const options = (rows as any[]).map((r) => ({
-    optionId: Number(r.option_id),
-    label: r.label,
-    position: Number(r.position),
-    votes: Number(r.votes),
-    percent: total ? Math.round((Number(r.votes) * 10000) / total) / 100 : 0,
-  }));
+    const total = (rows as any[]).reduce((s, r) => s + Number(r.votes), 0);
+    const options = (rows as any[]).map((r) => ({
+      id: Number(r.option_id),
+      text: r.label,
+      votes: Number(r.votes)
+    }));
 
-  res.json({
-    poll: {
-      slug: poll.slug,
+    // Check if the current user has voted on this poll
+    let hasVoted = false;
+    let userVote = undefined;
+    
+    if (username) {
+      const { Vote } = require('../db');
+      const vote = await Vote.findOne({
+        where: { 
+          poll_id: poll.id, 
+          voter_username: username 
+        }
+      });
+      
+      if (vote) {
+        hasVoted = true;
+        userVote = vote.option_id.toString();
+      }
+    }
+
+    res.json({
+      id: poll.slug,
       title: poll.title,
-      creatorUsername: poll.creator_username,
-    },
-    totalVotes: total,
-    options,
-  });
+      options,
+      totalVotes: total,
+      hasVoted,
+      userVote,
+      creatorUsername: poll.creator_username
+    });
+  } catch (error) {
+    console.error('Error fetching poll:', error);
+    res.status(500).json({ error: 'Failed to fetch poll' });
+  }
 }
 
 export async function castVote(req: Request, res: Response) {

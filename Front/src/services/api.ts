@@ -74,8 +74,9 @@ export async function castVote(slug: string, voteData: VoteRequest): Promise<{ o
 }
 
 // Fetch a specific poll by slug
-export async function fetchPoll(slug: string): Promise<any> {
-  const response = await fetch(`${API_BASE_URL}/polls/${slug}`);
+export async function fetchPoll(slug: string, username?: string): Promise<PollData> {
+  const url = username ? `${API_BASE_URL}/polls/${slug}?username=${encodeURIComponent(username)}` : `${API_BASE_URL}/polls/${slug}`;
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch poll');
   }
