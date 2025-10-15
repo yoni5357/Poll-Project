@@ -88,7 +88,7 @@ const HomePage: React.FC = () => {
   // Handle adding new polls
   const handlePollCreate = async (
     title: string,
-    options: { text: string }[]
+    options: string[]
   ) => {
     if (!user) {
       setShowAuth(true);
@@ -100,13 +100,13 @@ const HomePage: React.FC = () => {
       // Create poll on backend
       await createPoll({
         title,
-        options: options.map((opt) => opt.text),
+        options,
         creatorUsername: user,
       });
 
       // Reload polls to get the new poll from the server
       await loadPolls();
-      setShowPollCreator(false); // Hide creator after adding poll
+      setShowPollCreator(false);
       alert("Poll created successfully!");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to create poll");

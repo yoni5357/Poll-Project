@@ -8,7 +8,7 @@ interface PollOption {
 }
 
 interface PollCreatorProps {
-  onPollCreate: (title: string, options: { text: string }[]) => void;
+  onPollCreate: (title: string, options: string[]) => void;
 }
 
 export function PollCreator({ onPollCreate }: PollCreatorProps) {
@@ -50,7 +50,7 @@ export function PollCreator({ onPollCreate }: PollCreatorProps) {
     }
 
     // Create the poll
-    onPollCreate(title, validOptions.map(opt => ({ text: opt.text })));
+    onPollCreate(title, validOptions.map(opt => opt.text));
     
     // Reset form
     setTitle('');

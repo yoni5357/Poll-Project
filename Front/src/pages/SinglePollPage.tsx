@@ -67,7 +67,7 @@ const SinglePollPage: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || !poll) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -85,21 +85,6 @@ const SinglePollPage: React.FC = () => {
     );
   }
 
-  if (!poll) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Poll Not Found</h1>
-          <Link
-            to="/"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
-          >
-            Back to Home
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50">
